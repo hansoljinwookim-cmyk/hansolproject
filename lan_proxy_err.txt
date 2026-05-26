@@ -1,0 +1,50 @@
+127.0.0.1 - - [14/May/2026 17:08:51] "GET /index.html HTTP/1.1" 304 -
+127.0.0.1 - - [14/May/2026 17:08:52] "GET /styles.css?v=1.14 HTTP/1.1" 304 -
+127.0.0.1 - - [14/May/2026 17:08:52] "GET /app.js?v=2.0 HTTP/1.1" 304 -
+127.0.0.1 - - [14/May/2026 17:10:56] "POST /get-data?t=1778746132165 HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:18:03] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:18:04] "GET /styles.css?v=1.14 HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:18:04] "GET /app.js?v=2.0 HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:18:04] code 404, message File not found
+127.0.0.1 - - [14/May/2026 17:18:04] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [14/May/2026 17:18:21] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:20:27] "POST /get-data?t=1778746684415 HTTP/1.1" 200 -
+127.0.0.1 - - [14/May/2026 17:20:27] "POST /get-data?t=1778746684415 HTTP/1.1" 500 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 62739)
+Traceback (most recent call last):
+  File "C:\Users\Admin\.gemini\antigravity\scratch\ContainerSalesDashboard\unified_server.py", line 59, in proxy_to_n8n
+    self.wfile.write(data)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 840, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 현재 연결은 사용자의 호스트 시스템의 소프트웨어의 의해 중단되었습니다
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 692, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 761, in __init__
+    self.handle()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 436, in handle
+    self.handle_one_request()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 424, in handle_one_request
+    method()
+  File "C:\Users\Admin\.gemini\antigravity\scratch\ContainerSalesDashboard\unified_server.py", line 31, in do_POST
+    self.proxy_to_n8n()
+  File "C:\Users\Admin\.gemini\antigravity\scratch\ContainerSalesDashboard\unified_server.py", line 75, in proxy_to_n8n
+    self.end_headers()
+  File "C:\Users\Admin\.gemini\antigravity\scratch\ContainerSalesDashboard\unified_server.py", line 15, in end_headers
+    super().end_headers()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 538, in end_headers
+    self.flush_headers()
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 542, in flush_headers
+    self.wfile.write(b"".join(self._headers_buffer))
+  File "C:\Users\Admin\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 840, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 현재 연결은 사용자의 호스트 시스템의 소프트웨어의 의해 중단되었습니다
+----------------------------------------

@@ -1,0 +1,10 @@
+Multi-threaded Server starting on port 8080...
+--- [GET] /index.html ---
+--- [GET] /styles.css?v=1.14 ---
+--- [GET] /app.js?v=2.0 ---
+--- [POST] /get-data?t=1778741830669 ---
+>>> Forwarding to n8n: https://desktop-g3rnt5i.tail25a848.ts.net/webhook/bfb197f8-2f32-484e-877b-2cb676b86b0f
+>>> Sending request to n8n (Timeout: 300s)...
+--- [GET] /favicon.ico ---
+>>> Received response from n8n: 200
+>>> General proxy error: [WinError 10053] 현재 연결은 사용자의 호스트 시스템의 소프트웨어의 의해 중단되었습니다

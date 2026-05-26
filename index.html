@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>컨테이너 수주실적 관리 대시보드</title>
+    <link rel="stylesheet" href="styles.css?v=1.19">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-left">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i> 컨테이너 수주실적 관리 대시보드
+                </div>
+                <div class="tab-group">
+                    <button class="tab-btn active" data-tab="dashboardView"><i class="fas fa-th-large"></i> 수주실적 대시보드</button>
+                    <button class="tab-btn" data-tab="progressView"><i class="fas fa-tasks"></i> 주차별 영업진행현황</button>
+                </div>
+            </div>
+            <div class="nav-right">
+                <div class="filters">
+                    <select id="teamFilter" class="small-select"></select>
+                    <select id="personFilter" class="small-select"></select>
+                </div>
+                <button id="downloadDashboardBtn" class="tab-btn"><i class="fas fa-file-pdf"></i> PDF</button>
+                <button id="updateBtn" class="btn-primary"><i class="fas fa-sync-alt"></i> 최신 현황 업데이트</button>
+                <div id="lastUpdateInfo" class="update-time">업데이트 대기 중...</div>
+            </div>
+        </header>
+
+        <main class="content">
+            <!-- View 1: Dashboard -->
+            <div id="dashboardView">
+                <!-- Time Range Selector -->
+                <section class="control-section">
+                    <div class="section-header">
+                        <i class="fas fa-calendar-alt"></i> 조회 기간 선택
+                        <span id="kpiCumulativeMonthDisplay" class="month-display">1월 ~ 12월</span>
+                    </div>
+                    <div class="slider-container" style="padding: 1rem 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                    <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary-color);"><i class="fas fa-play" style="font-size: 0.7rem; margin-right:4px;"></i> 시작 월</span>
+                                    <span id="startMonthBadge" style="background: var(--primary-color); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">1월</span>
+                                </div>
+                                <input type="range" id="kpiStartMonthSlider" min="1" max="12" value="1" step="1">
+                                <div class="slider-labels" style="margin-top: 5px;">
+                                    <span>1월</span><span>2월</span><span>3월</span><span>4월</span><span>5월</span><span>6월</span>
+                                    <span>7월</span><span>8월</span><span>9월</span><span>10월</span><span>11월</span><span>12월</span>
+                                </div>
+                            </div>
+                            <div style="width: 2px; background: #e2e8f0; height: 40px; align-self: center;"></div>
+                            <div style="flex: 1; display: flex; flex-direction: column;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                    <span style="font-size: 0.85rem; font-weight: 700; color: #ef4444;"><i class="fas fa-stop" style="font-size: 0.7rem; margin-right:4px;"></i> 종료 월</span>
+                                    <span id="endMonthBadge" style="background: #ef4444; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold;">12월</span>
+                                </div>
+                                <input type="range" id="kpiEndMonthSlider" min="1" max="12" value="12" step="1">
+                                <div class="slider-labels" style="margin-top: 5px;">
+                                    <span>1월</span><span>2월</span><span>3월</span><span>4월</span><span>5월</span><span>6월</span>
+                                    <span>7월</span><span>8월</span><span>9월</span><span>10월</span><span>11월</span><span>12월</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon blue"><i class="fas fa-bullseye"></i></div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">누적 목표 합계</div>
+                            <div id="kpiTargetAmount" class="kpi-value">0억</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon green"><i class="fas fa-won-sign"></i></div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">누적 수주 합계 <small id="multiYearSubtext">(다년계약 포함)</small></div>
+                            <div id="kpiConfirmedAmount" class="kpi-value">0억</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon red"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">누적 차질액</div>
+                            <div id="kpiGapAmount" class="kpi-value">0억</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon purple"><i class="fas fa-percent"></i></div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">누적 달성률</div>
+                            <div id="kpiAchievementRate" class="kpi-value">0%</div>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon sky"><i class="fas fa-chart-line"></i></div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">전월 대비 증감</div>
+                            <div id="kpiMomGrowth" class="kpi-value">0억</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matrix Table -->
+                <div class="matrix-section card">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <i class="fas fa-table-cells"></i> 월별 팀별 통합 실적 그리드
+                        </div>
+                        <div class="header-right">
+                            <span class="unit-text" style="font-size: 0.75rem; color: #64748b; font-weight: normal; margin-right: 15px;">(단위: 억원)</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="excludeMultiYearToggle">
+                                <span class="slider round"></span>
+                            </label>
+                            <span class="toggle-label">다년계약 제외 적용 (올해분만 표기)</span>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="matrixTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">구분</th>
+                                    <th style="width: 140px;">팀명</th>
+                                    <th>1월</th><th>2월</th><th>3월</th><th>4월</th><th>5월</th><th>6월</th>
+                                    <th>7월</th><th>8월</th><th>9월</th><th>10월</th><th>11월</th><th>12월</th>
+                                    <th style="width: 100px;">연간 합계</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS-populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-container">
+                    <!-- Trend Chart -->
+                    <div class="chart-card full-width">
+                        <div class="card-header">
+                            <div class="header-left"><i class="fas fa-chart-area"></i> 팀별 수주 추이 분석</div>
+                        </div>
+                        <div class="chart-wrapper" style="height: 300px;">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Side-by-Side Charts Section (Full Width Card) -->
+                    <div class="chart-card full-width">
+                        <div class="card-header">
+                            <div class="header-left"><i class="fas fa-chart-bar"></i> 팀별 계획 대비 영업사원별 실적</div>
+                            <div class="header-right">
+                                <select id="sectionTeamSelector" class="small-select"></select>
+                                <select id="monthSelector" class="small-select"></select>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" style="height: 300px; display: flex; gap: 2rem;">
+                            <div style="flex: 1;"><canvas id="teamPlanChart"></canvas></div>
+                            <div style="flex: 2;"><canvas id="personActualChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Team Summary Section (Full Width Card) -->
+                    <div class="card full-width">
+                        <div class="card-header">
+                            <div class="header-left"><i class="fas fa-list-ul"></i> 팀별 요약</div>
+                            <div class="header-right" style="font-size: 0.8rem; font-weight: normal; color: #64748b;">
+                                목록을 클릭하면 하단에 상세 실적이 표시됩니다.
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table id="drilldownSummaryTable" class="data-table summary">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 35%;">영업팀</th>
+                                        <th style="width: 15%;">목표</th>
+                                        <th style="width: 15%;">실적</th>
+                                        <th style="width: 15%;">차질</th>
+                                        <th style="width: 20%;">달성률</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- JS-populated -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown Container -->
+                <div id="drilldownDetailContainer" class="detail-section card" style="display: none;">
+                    <div class="card-header">
+                        <div class="header-left" style="gap: 20px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-search-plus"></i> <span id="drilldownTeamName"></span> 상세 내역
+                            </div>
+                            <div class="premium-search">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="detailSearchInput" placeholder="사원, 청구처, PORT 등 통합검색..." class="premium-search-input">
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <select id="detailMonthFilter" class="small-select"></select>
+                            <select id="detailStatusFilter" class="small-select">
+                                <option value="all">품의상태 (전체)</option>
+                                <option value="품의완료">품의완료</option>
+                                <option value="품의전">품의전</option>
+                                <option value="전망">전망</option>
+                            </select>
+                            <button id="exportExcelBtn" class="btn-action green"><i class="fas fa-file-excel"></i> 엑셀</button>
+                            <button id="exportPdfBtn" class="btn-action red"><i class="fas fa-file-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="drilldownDetailTable" class="data-table detail">
+                            <thead>
+                                <tr>
+                                    <th>영업사원</th>
+                                    <th>청구처</th>
+                                    <th>PORT</th>
+                                    <th>수출입</th>
+                                    <th>작업지</th>
+                                    <th>권역</th>
+                                    <th>수주월</th>
+                                    <th>품의진행상태</th>
+                                    <th>다년계약</th>
+                                    <th>확정금액</th>
+                                    <th>Lv3</th>
+                                    <th>Lv2</th>
+                                    <th>Lv1</th>
+                                    <th>수주액 합계</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS-populated -->
+                            </tbody>
+                            <tfoot id="detailTableFooter">
+                                <!-- JS-populated totals -->
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View 2: Weekly Progress -->
+            <div id="progressView" class="hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="header-left"><i class="fas fa-tasks"></i> 주차별 영업진행현황</div>
+                        <div class="header-right">
+                            <button id="exportProgressExcelBtn" class="btn-action green"><i class="fas fa-file-excel"></i> 엑셀</button>
+                            <button id="exportProgressPdfBtn" class="btn-action red"><i class="fas fa-file-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="progressTable" class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">화주(청구처)</th>
+                                    <th style="width: 10%;">영업팀</th>
+                                    <th style="width: 10%;">담당자</th>
+                                    <th style="width: 30%;">이전 주차 영업 진행 현황</th>
+                                    <th style="width: 35%;" class="highlight-col">다음 주차 영업 계획</th>
+                                </tr>
+                            </thead>
+                            <tbody id="progressTableBody">
+                                <!-- JS-populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-content">
+                <div class="animation-container">
+                    <i class="fas fa-person-running person-icon"></i>
+                    <i class="fas fa-flag-checkered goal-icon"></i>
+                </div>
+                <p>수주 목표 점검을 위해 데이터를 분석 중입니다!</p>
+                <div class="loading-sub">화이팅! 데이터를 집계하는데 약 1~2분 정도 소요됩니다.</div>
+            </div>
+        </div>
+
+        <!-- Chatbot -->
+        <div id="chatbotToggle" class="chatbot-toggle">
+            <i class="fas fa-robot"></i> AI 챗봇 Report 출력
+        </div>
+        <div id="chatbotWindow" class="chatbot-window hidden">
+            <div class="chat-header">
+                <div class="header-left">AI 대시보드 어시스턴트</div>
+                <div class="header-right" style="display: flex; gap: 10px;">
+                    <button id="chatbotMaximize" title="전체화면" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-expand"></i></button>
+                    <button id="chatbotClose" style="background:none; border:none; color:white; cursor:pointer;"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <div id="chatbotGuide" style="background: #f8fafc; padding: 10px; font-size: 0.7rem; color: #64748b; border-bottom: 1px solid #e2e8f0; line-height: 1.4;">
+                💡 <b>AI 활용 팁:</b> "팀별 실적 요약해줘", "상위 영업사원 분석해줘" 등을 입력하세요.
+            </div>
+            <div id="chatbotMessages" class="chat-messages">
+                <div class="message bot">안녕하세요! 오늘의 수주 현황 분석을 도와드릴 AI입니다. 궁금한 내용을 물어보세요.</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatbotInput" placeholder="질문을 입력하세요...">
+                <button id="chatbotSend"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+    <script src="app.js?v=4.1"></script>
+</body>
+</html>

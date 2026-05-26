@@ -1,0 +1,10 @@
+--- [INVINCIBLE ENGINE START] ---
+Listening on port 8080 (0.0.0.0)
+>>> [INVINCIBLE PROXY] Request received from dashboard.
+>>> Attempt 1/3 to fetch from n8n...
+>>> Attempt 1 failed: The read operation timed out
+>>> Attempt 2/3 to fetch from n8n...
+>>> Attempt 2 failed: The read operation timed out
+>>> Attempt 3/3 to fetch from n8n...
+>>> Attempt 3 failed: The read operation timed out
+>>> [CRITICAL] All proxy attempts failed. Last error: The read operation timed out

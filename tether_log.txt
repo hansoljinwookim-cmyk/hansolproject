@@ -1,0 +1,18 @@
+Multi-threaded Server starting on port 8001...
+--- [POST] /get-data ---
+>>> Forwarding to n8n: https://desktop-g3rnt5i.tail25a848.ts.net/webhook/bfb197f8-2f32-484e-877b-2cb676b86b0f
+>>> Sending request to n8n (Timeout: 300s)...
+--- [GET] /index.html ---
+--- [GET] /app.js?v=2.0 ---
+--- [POST] /get-data?t=1778739019349 ---
+>>> Forwarding to n8n: https://desktop-g3rnt5i.tail25a848.ts.net/webhook/bfb197f8-2f32-484e-877b-2cb676b86b0f
+>>> Sending request to n8n (Timeout: 300s)...
+>>> Received response from n8n: 200
+>>> Success: Sent 173139 bytes back to dashboard.
+>>> Received response from n8n: 200
+>>> Success: Sent 173139 bytes back to dashboard.
+--- [POST] /get-data?t=1778739206551 ---
+>>> Forwarding to n8n: https://desktop-g3rnt5i.tail25a848.ts.net/webhook/bfb197f8-2f32-484e-877b-2cb676b86b0f
+>>> Sending request to n8n (Timeout: 300s)...
+>>> Received response from n8n: 200
+>>> Success: Sent 173139 bytes back to dashboard.

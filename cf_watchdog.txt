@@ -1,0 +1,94 @@
+2026-05-15T03:07:02Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-05-15T03:07:02Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-05-15T03:07:06Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:07:06Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-05-15T03:07:06Z INF |  https://poet-played-fred-bottom.trycloudflare.com                                         |
+2026-05-15T03:07:06Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:07:06Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-05-15T03:07:06Z INF Version 2026.5.0 (Checksum f141cded099c239171ad2cea6fb5da0fdaa2bd36104c3074d883f9546519eba7)
+2026-05-15T03:07:06Z INF GOOS: windows, GOVersion: go1.26.2, GoArch: amd64
+2026-05-15T03:07:06Z INF Settings: map[ha-connections:1 protocol:quic url:http://127.0.0.1:8080]
+2026-05-15T03:07:06Z INF cloudflared will not automatically update on Windows systems.
+2026-05-15T03:07:06Z INF Generated Connector ID: 2cd52397-1e28-41e4-8b5e-48d9d1ae9b70
+2026-05-15T03:07:06Z INF Initial protocol quic
+2026-05-15T03:07:06Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:07:06Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:07:06Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-05-15T03:07:06Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:07:06Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.227
+2026-05-15T03:07:06Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:07:06Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-05-15T03:07:06Z INF Registered tunnel connection connIndex=0 connection=c0819a8f-29de-42f4-8c7b-87ee0c93848f event=0 ip=198.41.192.227 location=icn06 protocol=quic
+2026-05-15T03:08:08Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8080
+2026-05-15T03:08:08Z ERR Request failed error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 dest=https://poet-played-fred-bottom.trycloudflare.com/index.html event=0 ip=198.41.192.227 type=http
+2026-05-15T03:08:08Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8080
+2026-05-15T03:08:08Z ERR Request failed error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 dest=https://poet-played-fred-bottom.trycloudflare.com/favicon.ico event=0 ip=198.41.192.227 type=http
+2026-05-15T03:09:39Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-05-15T03:09:39Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-05-15T03:09:43Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:09:43Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-05-15T03:09:43Z INF |  https://currently-lecture-mile-editorials.trycloudflare.com                               |
+2026-05-15T03:09:43Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:09:43Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-05-15T03:09:43Z INF Version 2026.5.0 (Checksum f141cded099c239171ad2cea6fb5da0fdaa2bd36104c3074d883f9546519eba7)
+2026-05-15T03:09:43Z INF GOOS: windows, GOVersion: go1.26.2, GoArch: amd64
+2026-05-15T03:09:43Z INF Settings: map[ha-connections:1 protocol:quic url:http://127.0.0.1:8080]
+2026-05-15T03:09:43Z INF cloudflared will not automatically update on Windows systems.
+2026-05-15T03:09:43Z INF Generated Connector ID: 32d575bf-fc17-455a-a1a4-7ec5fab6d2e8
+2026-05-15T03:09:43Z INF Initial protocol quic
+2026-05-15T03:09:43Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:09:43Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:09:43Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-05-15T03:09:43Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:09:43Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:43Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:43Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:43Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:43Z INF Retrying connection in up to 2s connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:43Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:09:43Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-05-15T03:09:44Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:44Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:44Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:44Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:44Z INF Retrying connection in up to 4s connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:48Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:48Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:48Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:48Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:48Z INF Retrying connection in up to 8s connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:53Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:53Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:53Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:53Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:53Z INF Retrying connection in up to 16s connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:58Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:58Z ERR failed to run the datagram handler error="context canceled" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:58Z ERR failed to serve tunnel connection error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:58Z ERR Serve tunnel error error="control stream encountered a failure while serving" connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:09:58Z INF Retrying connection in up to 32s connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:10:03Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.200.33
+2026-05-15T03:10:03Z INF Registered tunnel connection connIndex=0 connection=ab04e028-0daa-486d-9bde-c4617540ed27 event=0 ip=198.41.200.33 location=icn05 protocol=quic
+2026-05-15T03:10:17Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2026-05-15T03:10:17Z INF Requesting new quick Tunnel on trycloudflare.com...
+2026-05-15T03:10:21Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:10:21Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2026-05-15T03:10:21Z INF |  https://phantom-inform-markers-kenneth.trycloudflare.com                                  |
+2026-05-15T03:10:21Z INF +--------------------------------------------------------------------------------------------+
+2026-05-15T03:10:21Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp]
+2026-05-15T03:10:21Z INF Version 2026.5.0 (Checksum f141cded099c239171ad2cea6fb5da0fdaa2bd36104c3074d883f9546519eba7)
+2026-05-15T03:10:21Z INF GOOS: windows, GOVersion: go1.26.2, GoArch: amd64
+2026-05-15T03:10:21Z INF Settings: map[ha-connections:1 p:http2 protocol:http2 url:http://127.0.0.1:8080]
+2026-05-15T03:10:21Z INF cloudflared will not automatically update on Windows systems.
+2026-05-15T03:10:21Z INF Generated Connector ID: 6a5d4936-eb00-490f-b4f2-676df84051e9
+2026-05-15T03:10:21Z INF Initial protocol http2
+2026-05-15T03:10:21Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:10:21Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:10:21Z INF cloudflared does not support loading the system root certificate pool on Windows. Please use --origin-ca-pool <PATH> to specify the path to the certificate pool
+2026-05-15T03:10:21Z INF ICMP proxy will use 172.30.15.141 as source for IPv4
+2026-05-15T03:10:21Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveID(65074) CurveP256] connIndex=0 event=0 ip=198.41.192.57
+2026-05-15T03:10:21Z INF ICMP proxy will use ::1 in zone Loopback Pseudo-Interface 1 as source for IPv6
+2026-05-15T03:10:21Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2026-05-15T03:10:22Z INF Registered tunnel connection connIndex=0 connection=da7e45c0-6e18-47d6-ba35-0de8d8b57777 event=0 ip=198.41.192.57 location=icn06 protocol=http2
+2026-05-15T03:11:04Z ERR  error="Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF" connIndex=0 event=1 ingressRule=0 originService=http://127.0.0.1:8080
+2026-05-15T03:11:04Z ERR failed to serve incoming request error="Failed to proxy HTTP: Unable to reach the origin service. The service may be down or it may not be responding to traffic from cloudflared: EOF"
