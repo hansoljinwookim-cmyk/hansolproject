@@ -1,5 +1,5 @@
 // --- Configuration ---
-const WEBHOOK_URL = '/get-data';
+const WEBHOOK_URL = 'https://desktop-g3rnt5i.tail25a848.ts.net/webhook/bfb197f8-2f32-484e-877b-2cb676b86b0f';
 
 // --- Global State ---
 let dashboardData = { plan: [], actual: [], progress: [] };
