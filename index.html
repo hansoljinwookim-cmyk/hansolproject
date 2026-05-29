@@ -163,9 +163,16 @@
                     <div class="chart-card full-width">
                         <div class="card-header">
                             <div class="header-left"><i class="fas fa-chart-bar"></i> 팀별 계획 대비 영업사원별 실적</div>
-                            <div class="header-right">
-                                <select id="sectionTeamSelector" class="small-select"></select>
-                                <select id="monthSelector" class="small-select"></select>
+                            <div class="header-right" style="display: flex; align-items: flex-end; gap: 15px;">
+                                <select id="sectionTeamSelector" class="small-select" style="margin-bottom: 2px;"></select>
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: bold;">당월 누계 보기</span>
+                                    <select id="sectionCumMonthSelector" class="small-select"></select>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                                    <span style="font-size: 0.75rem; color: #64748b; font-weight: bold;">당월만 선택 보기</span>
+                                    <select id="sectionSingleMonthSelector" class="small-select"></select>
+                                </div>
                             </div>
                         </div>
                         <div class="chart-wrapper" style="height: 300px; display: flex; gap: 2rem;">
@@ -178,8 +185,8 @@
                     <div class="card full-width">
                         <div class="card-header">
                             <div class="header-left"><i class="fas fa-list-ul"></i> 팀별 요약</div>
-                            <div class="header-right" style="font-size: 0.8rem; font-weight: normal; color: #64748b;">
-                                목록을 클릭하면 하단에 상세 실적이 표시됩니다.
+                            <div class="header-right" style="font-size: 0.8rem; font-weight: normal; color: #64748b; display: flex; align-items: center; gap: 10px;">
+                                <span>목록을 클릭하면 하단에 상세 실적이 표시됩니다.</span>
                             </div>
                         </div>
                         <div class="table-wrapper">
@@ -213,9 +220,16 @@
                                 <input type="text" id="detailSearchInput" placeholder="사원, 청구처, PORT 등 통합검색..." class="premium-search-input">
                             </div>
                         </div>
-                        <div class="header-right">
-                            <select id="detailMonthFilter" class="small-select"></select>
-                            <select id="detailStatusFilter" class="small-select">
+                        <div class="header-right" style="display: flex; align-items: flex-end; gap: 15px;">
+                            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                                <span style="font-size: 0.75rem; color: #64748b; font-weight: bold;">당월 누계 보기</span>
+                                <select id="detailCumMonthSelector" class="small-select"></select>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                                <span style="font-size: 0.75rem; color: #64748b; font-weight: bold;">당월만 선택 보기</span>
+                                <select id="detailSingleMonthSelector" class="small-select"></select>
+                            </div>
+                            <select id="detailStatusFilter" class="small-select" style="margin-bottom: 2px;">
                                 <option value="all">품의상태 (전체)</option>
                                 <option value="품의완료">품의완료</option>
                                 <option value="품의전">품의전</option>
@@ -462,6 +476,6 @@
             </div>
         </div>
     </div>
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=15"></script>
 </body>
 </html>

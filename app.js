@@ -228,7 +228,7 @@ async function fetchData() {
         updateDashboard();
     } catch (err) {
         console.error(err);
-        alert("데이터 로드 실패");
+        alert("데이터 로드 실패: " + err.message + "\n" + err.stack);
     } finally {
         showLoading(false);
     }
@@ -270,8 +270,7 @@ function updateDashboard() {
     renderKPIs(mPlan, mActual, startMonth, endMonth, adjActual, excludeMultiYear);
     renderMatrixTable(adjPlan, adjActual, startMonth, endMonth);
     renderMonthlyChart(adjPlan, adjActual, startMonth, endMonth);
-    renderMonthComparisonSection(adjPlan, adjActual, endMonth); // Comparison uses endMonth as current
-    renderDrillDownSummary(mPlan, mActual);
+    renderMonthComparisonSection(adjPlan, adjActual, startMonth, endMonth);
     filterAndRenderProgressTable();
     renderWeeklyReport();
 }
@@ -430,34 +429,72 @@ function renderMonthlyChart(plan, actual, startMonth, endMonth) {
     });
 }
 
-function renderMonthComparisonSection(plan, actual, globalMonth) {
+function renderMonthComparisonSection(plan, actual, globalStartMonth, globalEndMonth) {
     const teamSel = document.getElementById('sectionTeamSelector');
-    const monthSel = document.getElementById('monthSelector');
+    const cumSel = document.getElementById('sectionCumMonthSelector');
+    const singleSel = document.getElementById('sectionSingleMonthSelector');
+
     if (teamSel.options.length === 0) {
         teamSel.add(new Option('컨테이너 전체', 'all'));
         ['컨테이너영업1팀', '컨테이너영업2팀', '컨테이너영업3팀', 'TCS'].forEach(t => teamSel.add(new Option(t, t)));
-        monthSel.add(new Option('연간 전체 합계', 'all'));
-        for (let i = 1; i <= 12; i++) monthSel.add(new Option(`${i}월`, i));
+        
+        cumSel.add(new Option('선택', 'none'));
+        for(let i=1; i<=12; i++) cumSel.add(new Option(`${i}월 누계`, i));
+        
+        singleSel.add(new Option('선택', 'none'));
+        for(let i=1; i<=12; i++) singleSel.add(new Option(`${i}월`, i));
+        singleSel.add(new Option('연간 전체 합계', 'all'));
 
-        const up = () => {
-            renderMonthComparisonCharts(plan, actual, teamSel.value, monthSel.value);
-        };
-        teamSel.onchange = up; monthSel.onchange = up;
+        cumSel.value = globalEndMonth;
     }
-    renderMonthComparisonCharts(plan, actual, teamSel.value, monthSel.value);
+
+    const applyFilters = () => {
+        let sMonth = 1;
+        let eMonth = 12;
+        
+        if (cumSel.value !== 'none') {
+            eMonth = parseInt(cumSel.value);
+            sMonth = 1;
+        } else if (singleSel.value !== 'none') {
+            if (singleSel.value === 'all') {
+                sMonth = 1;
+                eMonth = 12;
+            } else {
+                sMonth = parseInt(singleSel.value);
+                eMonth = parseInt(singleSel.value);
+            }
+        } else {
+            // Both are none, default to global slider
+            sMonth = 1;
+            eMonth = globalEndMonth;
+        }
+
+        renderMonthComparisonCharts(plan, actual, teamSel.value, sMonth, eMonth);
+        renderDrillDownSummary(plan, actual, sMonth, eMonth);
+    };
+
+    const upCum = () => {
+        if (cumSel.value !== 'none') singleSel.value = 'none';
+        applyFilters();
+    };
+
+    const upSingle = () => {
+        if (singleSel.value !== 'none') cumSel.value = 'none';
+        applyFilters();
+    };
+
+    teamSel.onchange = applyFilters;
+    cumSel.onchange = upCum;
+    singleSel.onchange = upSingle;
+
+    applyFilters();
 }
 
-
-function renderMonthComparisonCharts(plan, actual, team, endMonth) {
-    const isCumulative = !isNaN(endMonth);
+function renderMonthComparisonCharts(plan, actual, team, startMonth, endMonth) {
     const match = (it) => {
         const teamMatch = team === 'all' || it.Teamname.includes(team);
         if (!teamMatch) return false;
-        if (isCumulative) {
-            if (endMonth === 'all') return true;
-            return it.MonthInt <= parseInt(endMonth);
-        }
-        return true;
+        return it.MonthInt >= startMonth && it.MonthInt <= endMonth;
     };
     const pVal = plan.filter(match).reduce((s, c) => s + c.CalculatedAmount, 0);
     const aVal = actual.filter(match).reduce((s, c) => s + c.CalculatedAmount, 0);
@@ -540,15 +577,20 @@ function renderMonthComparisonCharts(plan, actual, team, endMonth) {
     });
 }
 
-function renderDrillDownSummary(plan, actual) {
+function renderDrillDownSummary(plan, actual, startMonth, endMonth) {
+    const match = (it) => it.MonthInt >= startMonth && it.MonthInt <= endMonth;
+
+    const mPlan = plan.filter(match);
+    const mActual = actual.filter(match);
+
     const tbody = document.querySelector('#drilldownSummaryTable tbody');
     tbody.innerHTML = '';
     const teams = ['컨테이너영업1팀', '컨테이너영업2팀', '컨테이너영업3팀', 'TCS'];
     let tP = 0, tA = 0;
 
     teams.forEach(team => {
-        const teamPlanData = plan.filter(it => it.Teamname.includes(team));
-        const teamActualData = actual.filter(it => it.Teamname.includes(team));
+        const teamPlanData = mPlan.filter(it => it.Teamname.includes(team));
+        const teamActualData = mActual.filter(it => it.Teamname.includes(team));
         const p = teamPlanData.reduce((s, c) => s + c.CalculatedAmount, 0);
         const a = teamActualData.reduce((s, c) => s + c.CalculatedAmount, 0);
         tP += p; tA += a;
@@ -591,33 +633,41 @@ function renderDrillDownSummary(plan, actual) {
                     `;
                     ptr.onclick = (ev) => {
                         ev.stopPropagation();
-                        renderDrillDownDetail(team, dashboardData.actual, person);
+                        renderDrillDownDetail(team, actual, startMonth, endMonth, person);
                     };
                     tr.after(ptr);
                 });
-            } else {
-                icon.classList.replace('fa-minus-square', 'fa-plus-square');
             }
-            renderDrillDownDetail(team, dashboardData.actual);
         };
+
         tbody.appendChild(tr);
     });
 
-    const trTot = document.createElement('tr');
-    trTot.className = 'sum-row';
-    trTot.style.background = '#f1f5f9';
-    trTot.innerHTML = `
-        <td style="text-align:center; font-weight:800;">전체 합계</td>
-        <td style="text-align:center; font-weight:800;">${formatNumber(tP, true)}억</td>
-        <td style="text-align:center; font-weight:800;">${formatNumber(tA, true)}억</td>
-        <td style="text-align:center; font-weight:800; color:${(tA - tP) < 0 ? 'red' : 'inherit'}">${formatNumber(tA - tP, true)}억</td>
-        <td style="text-align:center; font-weight:800;">${tP > 0 ? (tA / tP * 100).toFixed(1) : 0}%</td>
+    const trTotal = document.createElement('tr');
+    trTotal.style.backgroundColor = '#f1f5f9';
+    trTotal.style.borderTop = '2px solid #cbd5e1';
+    trTotal.innerHTML = `
+        <td style="text-align:center; padding: 12px; font-weight: 800; color: #1e293b;">총 합계</td>
+        <td style="text-align:center; color: #1e293b; font-weight: 800;">${formatNumber(tP, true)}억</td>
+        <td style="text-align:center; color: var(--primary-color); font-weight: 800;">${formatNumber(tA, true)}억</td>
+        <td style="text-align:center; color: ${(tA - tP) < 0 ? 'red' : '#1e293b'}; font-weight: 800;">${formatNumber(tA - tP, true)}억</td>
+        <td style="text-align:center; color: #1e293b; font-weight: 900; font-size: 1.1rem;">${tP > 0 ? (tA / tP * 100).toFixed(1) : 0}%</td>
     `;
-    trTot.onclick = () => renderDrillDownDetail('전체', actual);
-    tbody.appendChild(trTot);
+    trTotal.onclick = () => renderDrillDownDetail('전체', actual, startMonth, endMonth);
+    tbody.appendChild(trTotal);
+
+    const tbl = document.getElementById('drilldownSummaryTable');
+    tbl.onclick = (e) => {
+        if (!e.target.closest('tr') || e.target.closest('tr').rowIndex === 0) return;
+        if (!e.target.closest('.team-row') && !e.target.closest('.person-row')) return;
+        if (e.target.closest('.person-row')) return;
+        const r = e.target.closest('.team-row');
+        const team = r.cells[0].textContent.replace('(+)', '').replace('(-)', '').trim();
+        renderDrillDownDetail(team, actual, startMonth, endMonth);
+    };
 }
 
-function renderDrillDownDetail(team, actual, person = null) {
+function renderDrillDownDetail(team, actual, startMonth, endMonth, person = null) {
     currentDrilldownTeam = team;
     currentDrilldownPerson = person;
     document.getElementById('drilldownDetailContainer').style.display = 'block';
@@ -628,13 +678,62 @@ function renderDrillDownDetail(team, actual, person = null) {
     tbody.innerHTML = '';
 
     const search = (document.getElementById('detailSearchInput')?.value || '').toLowerCase();
-    const monthF = document.getElementById('detailMonthFilter')?.value || 'all';
+    
+    const cumSel = document.getElementById('detailCumMonthSelector');
+    const singleSel = document.getElementById('detailSingleMonthSelector');
+    
+    if (cumSel && cumSel.options.length === 0) {
+        cumSel.add(new Option('선택', 'none'));
+        for(let i=1; i<=12; i++) cumSel.add(new Option(`${i}월 누계`, i));
+        
+        singleSel.add(new Option('선택', 'none'));
+        for(let i=1; i<=12; i++) singleSel.add(new Option(`${i}월`, i));
+        singleSel.add(new Option('연간 전체 합계', 'all'));
+        
+        cumSel.value = endMonth; // default to global endMonth when first initialized
+    }
+    
+    const applyFilters = () => renderDrillDownDetail(currentDrilldownTeam, actual, startMonth, endMonth, currentDrilldownPerson);
+    
+    if (cumSel && !cumSel.onchange) {
+        cumSel.onchange = () => {
+            if (cumSel.value !== 'none') singleSel.value = 'none';
+            applyFilters();
+        };
+    }
+    if (singleSel && !singleSel.onchange) {
+        singleSel.onchange = () => {
+            if (singleSel.value !== 'none') cumSel.value = 'none';
+            applyFilters();
+        };
+    }
+
+    let sMonth = 1;
+    let eMonth = 12;
+    if (cumSel && cumSel.value !== 'none') {
+        eMonth = parseInt(cumSel.value);
+        sMonth = 1;
+    } else if (singleSel && singleSel.value !== 'none') {
+        if (singleSel.value === 'all') {
+            sMonth = 1;
+            eMonth = 12;
+        } else {
+            sMonth = parseInt(singleSel.value);
+            eMonth = parseInt(singleSel.value);
+        }
+    } else {
+        sMonth = 1;
+        eMonth = endMonth;
+    }
+
     const statusF = document.getElementById('detailStatusFilter')?.value || 'all';
 
     let filtered = actual.filter(a => {
         if (team !== '전체' && !a.Teamname.includes(team)) return false;
         if (person && a.SalesPerson !== person) return false;
-        if (monthF !== 'all' && a.MonthInt !== parseInt(monthF)) return false;
+        
+        if (a.MonthInt < sMonth || a.MonthInt > eMonth) return false;
+
         if (statusF !== 'all' && (a.Status === statusF || (statusF === '전망' && a.Status === '진행중'))) {
             // Match
         } else if (statusF !== 'all') {
@@ -1026,8 +1125,6 @@ function populateFilters() {
     const tF = document.getElementById('teamFilter'), pF = document.getElementById('personFilter');
     tF.innerHTML = '<option value="all">전체 팀</option>'; pF.innerHTML = '<option value="all">전체 사원</option>';
     teams.forEach(t => tF.add(new Option(t, t))); persons.forEach(p => pF.add(new Option(p, p)));
-    const mF = document.getElementById('detailMonthFilter'); mF.innerHTML = '<option value="all">수주월 (전체)</option>';
-    for (let i = 1; i <= 12; i++) mF.add(new Option(`${i}월`, i));
 }
 async function exportTableToExcel(id, name) {
     const table = document.getElementById(id);
