@@ -23,6 +23,7 @@
                 <div class="tab-group">
                     <button class="tab-btn active" data-tab="dashboardView"><i class="fas fa-th-large"></i> 수주실적 대시보드</button>
                     <button class="tab-btn" data-tab="progressView"><i class="fas fa-tasks"></i> 주차별 영업진행현황</button>
+                    <button class="tab-btn" data-tab="reportView"><i class="fas fa-file-alt"></i> 주간업무보고</button>
                 </div>
             </div>
             <div class="nav-right">
@@ -32,7 +33,7 @@
                 </div>
                 <button id="downloadDashboardBtn" class="tab-btn"><i class="fas fa-file-pdf"></i> PDF</button>
                 <button id="updateBtn" class="btn-primary"><i class="fas fa-sync-alt"></i> 최신 현황 업데이트</button>
-                <div id="lastUpdateInfo" class="update-time">업데이트 대기 중...</div>
+                <div id="lastUpdateInfo" class="update-time">업데이트 대기중...</div>
             </div>
         </header>
 
@@ -260,7 +261,9 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="header-left"><i class="fas fa-tasks"></i> 주차별 영업진행현황</div>
-                        <div class="header-right">
+                        <div class="header-right" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="progressClientSearch" placeholder="화주(청구처) 검색..." style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem; outline: none; width: 140px;">
+                            <input type="text" id="progressPersonSearch" placeholder="담당자 검색..." style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.8rem; outline: none; width: 100px;">
                             <button id="exportProgressExcelBtn" class="btn-action green"><i class="fas fa-file-excel"></i> 엑셀</button>
                             <button id="exportProgressPdfBtn" class="btn-action red"><i class="fas fa-file-pdf"></i> PDF</button>
                         </div>
@@ -277,6 +280,145 @@
                                 </tr>
                             </thead>
                             <tbody id="progressTableBody">
+                                <!-- JS-populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- View 3: Weekly Report -->
+            <div id="reportView" class="hidden">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div class="header-left"><i class="fas fa-file-alt"></i> 주간업무보고</div>
+                        <div class="header-right">
+                            <span class="unit-text" style="font-size: 0.75rem; color: #64748b; font-weight: normal; margin-right: 15px;">(단위: 억원)</span>
+                            <span style="font-size: 0.8rem; font-weight: bold; color: #334155; margin-right: 10px;">당월(조회월) 선택:</span>
+                            <select id="reportMonthFilter" class="small-select">
+                                <option value="1">1월</option>
+                                <option value="2">2월</option>
+                                <option value="3">3월</option>
+                                <option value="4">4월</option>
+                                <option value="5">5월</option>
+                                <option value="6" selected>6월</option>
+                                <option value="7">7월</option>
+                                <option value="8">8월</option>
+                                <option value="9">9월</option>
+                                <option value="10">10월</option>
+                                <option value="11">11월</option>
+                                <option value="12">12월</option>
+                            </select>
+                            <button id="exportReportExcelBtn" class="btn-action green"><i class="fas fa-file-excel"></i> 엑셀</button>
+                            <button id="exportReportPdfBtn" class="btn-action red"><i class="fas fa-file-pdf"></i> PDF</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="reportTable" class="data-table" style="text-align: center;">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" style="background-color: #e2e8f0; color: #1e293b; width: 9%;">구 분</th>
+                                    <th rowspan="2" style="background-color: #e2e8f0; color: #1e293b; width: 9%;">전년실적</th>
+                                    <th rowspan="2" style="background-color: #e2e8f0; color: #1e293b; width: 9%;">경영목표</th>
+                                    <th colspan="2" id="reportCurrentMonthHeader" style="background-color: #e2e8f0; color: #1e293b; width: 18%;">당월(6월)</th>
+                                    <th colspan="2" style="background-color: #e2e8f0; color: #1e293b; width: 18%;">누계</th>
+                                    <th colspan="2" id="reportCurrentMonthLv3Header" style="background-color: #e2e8f0; color: #1e293b; width: 37%;">당월누계(6월) Lv3</th>
+                                </tr>
+                                <tr>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 9%;">계획</th>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 9%;">실적</th>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 9%;">계획</th>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 9%;">실적</th>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 9%;">Lv3 금액</th>
+                                    <th style="background-color: #e0f2fe; color: #0c4a6e; width: 28%;">Lv3 내역</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportTableBody">
+                                <!-- JS-populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 수주 품의전 확정 거래선 -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div class="header-left">- 수주품의전 확정 거래선 (<span id="preApprovalTotal">0</span>억)</div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="preApprovalTable" class="data-table" style="text-align: center;">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #e2e8f0; color: #1e293b; width: 25%;">고객명(청구처명)</th>
+                                    <th style="background-color: #e2e8f0; color: #1e293b; width: 15%;">부서명</th>
+                                    <th style="background-color: #e2e8f0; color: #1e293b; width: 15%;">예정일</th>
+                                    <th style="background-color: #e2e8f0; color: #1e293b; width: 30%;">계약지연사유</th>
+                                    <th style="background-color: #e2e8f0; color: #1e293b; width: 15%;">금액(억)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preApprovalTableBody">
+                                <!-- JS-populated -->
+                            </tbody>
+                            <tfoot>
+                                <tr style="font-weight: bold; background-color: #f1f5f9; height: 45px;">
+                                    <td colspan="4" style="text-align: center;">합계</td>
+                                    <td id="preApprovalSum">0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div style="text-align: right; font-size: 0.85rem; color: #64748b; margin-top: 10px; padding-right: 15px;">
+                        ※ 다년계약(<span id="preApprovalMultiTotal">0</span>억) 제외시 <span id="preApprovalNetTotal">0</span>억 (Lv3포함)
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: center; margin-bottom: 2rem;">
+                    <!-- 수주실적 검증 -->
+                    <div class="card" style="width: 75%; min-width: 600px;">
+                        <div class="card-header">
+                            <div class="header-left"><i class="fas fa-check-circle"></i> 수주실적 검증</div>
+                        </div>
+                        <div class="table-wrapper" style="display: flex; gap: 2rem; align-items: center;">
+                            <table id="validationTable" class="data-table" style="text-align: center; flex: 1;">
+                                <thead>
+                                    <tr>
+                                        <th style="background-color: #fde047; color: #333; width: 25%;">권역</th>
+                                        <th style="background-color: #fde047; color: #333; width: 25%;">품의전</th>
+                                        <th style="background-color: #fde047; color: #333; width: 25%;">품의완료</th>
+                                        <th style="background-color: #fde047; color: #333; width: 25%;">총 수주액</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="validationTableBody">
+                                    <!-- JS-populated -->
+                                </tbody>
+                            </table>
+                            
+                            <div style="border: 1px solid #cbd5e1; padding: 15px; background: #fff; text-align: center; border-radius: 8px; min-width: 150px;">
+                                <div style="background-color: #fde047; padding: 5px; font-weight: bold; border-bottom: 1px solid #cbd5e1; margin: -15px -15px 15px -15px; border-radius: 8px 8px 0 0;">다년계약 제외</div>
+                                <div id="validationExcludingMultiYear" style="color: #ef4444; font-weight: bold; font-size: 1.2rem;">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 다년계약 현황 -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="header-left"><i class="fas fa-handshake"></i> 다년계약 현황</div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table id="multiYearTable" class="data-table" style="text-align: center;">
+                            <thead>
+                                <tr>
+                                    <th style="background-color: #60a5fa; color: #fff;">청구처</th>
+                                    <th style="background-color: #60a5fa; color: #fff;">계약년수</th>
+                                    <th style="background-color: #60a5fa; color: #fff;">확정금액</th>
+                                    <th style="background-color: #60a5fa; color: #fff;">1년 금액</th>
+                                    <th style="background-color: #60a5fa; color: #fff;">다년 금액</th>
+                                    <th style="background-color: #60a5fa; color: #fff;">품의진행상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="multiYearTableBody">
                                 <!-- JS-populated -->
                             </tbody>
                         </table>
@@ -320,6 +462,6 @@
             </div>
         </div>
     </div>
-    <script src="app.js?v=4.1"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>

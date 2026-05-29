@@ -22,13 +22,18 @@ function setupEventListeners() {
     // Moved downloadDashboardBtn listener to Exports section
 
     // Tab Switching
+    document.getElementById('progressClientSearch')?.addEventListener('input', filterAndRenderProgressTable);
+    document.getElementById('progressPersonSearch')?.addEventListener('input', filterAndRenderProgressTable);
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const targetId = e.currentTarget.getAttribute('data-tab');
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (!targetId) return; // Ignore buttons without data-tab like PDF download
+            document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
             e.currentTarget.classList.add('active');
             document.getElementById('dashboardView').classList.toggle('hidden', targetId !== 'dashboardView');
             document.getElementById('progressView').classList.toggle('hidden', targetId !== 'progressView');
+            document.getElementById('reportView').classList.toggle('hidden', targetId !== 'reportView');
         });
     });
 
@@ -61,6 +66,7 @@ function setupEventListeners() {
     // Detail Filters
     document.getElementById('detailSearchInput')?.addEventListener('input', () => renderDrillDownDetail(currentDrilldownTeam, dashboardData.actual, currentDrilldownPerson));
     document.getElementById('detailMonthFilter')?.addEventListener('change', () => renderDrillDownDetail(currentDrilldownTeam, dashboardData.actual, currentDrilldownPerson));
+    document.getElementById('detailStatusFilter')?.addEventListener('change', () => renderDrillDownDetail(currentDrilldownTeam, dashboardData.actual, currentDrilldownPerson));
 
     document.getElementById('downloadDashboardBtn')?.addEventListener('click', () => exportElementToPDF('dashboardView', '컨테이너_수주실적_대시보드.pdf', 'landscape'));
 
@@ -69,6 +75,10 @@ function setupEventListeners() {
     document.getElementById('exportPdfBtn')?.addEventListener('click', () => exportElementToPDF('drilldownDetailContainer', '영업상세내역.pdf', 'landscape'));
     document.getElementById('exportProgressExcelBtn')?.addEventListener('click', () => exportTableToExcel('progressTable', '주차별영업현황.xlsx'));
     document.getElementById('exportProgressPdfBtn')?.addEventListener('click', () => exportElementToPDF('progressView', '주차별영업현황.pdf', 'landscape'));
+
+    document.getElementById('reportMonthFilter')?.addEventListener('change', updateDashboard);
+    document.getElementById('exportReportExcelBtn')?.addEventListener('click', () => exportWeeklyReportExcel('주간업무보고.xlsx'));
+    document.getElementById('exportReportPdfBtn')?.addEventListener('click', () => exportElementToPDF('reportView', '주간업무보고.pdf', 'landscape'));
 
     // Chatbot
     document.getElementById('chatbotToggle')?.addEventListener('click', () => {
@@ -93,7 +103,14 @@ function setupEventListeners() {
 async function fetchData() {
     showLoading(true);
     try {
-        const response = await fetch(WEBHOOK_URL + '?t=' + Date.now(), { method: 'POST' });
+        const payload = { action: "fetch_data", timestamp: Date.now() };
+        const response = await fetch(WEBHOOK_URL + '?t=' + Date.now(), { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
         if (!response.ok) throw new Error('Network response was not ok');
         const rawData = await response.json();
 
@@ -110,6 +127,41 @@ async function fetchData() {
                 if (item.modifiedTime) modifiedTime = item.modifiedTime;
                 if (item.lastModifyingUser?.displayName) lastUser = item.lastModifyingUser.displayName;
             });
+        }
+        let maxUpdatedAt = 0;
+        const scanForTime = (arr) => {
+            if (!Array.isArray(arr)) return;
+            arr.forEach(row => {
+                const dataObj = row.json ? row.json : row;
+                const t = dataObj.updatedAt || dataObj.modifiedTime || dataObj.updated_at;
+                if (t) {
+                    const time = new Date(t).getTime();
+                    if (time > maxUpdatedAt) maxUpdatedAt = time;
+                }
+            });
+        };
+        
+        scanForTime(plan);
+        scanForTime(actual);
+        scanForTime(progress);
+
+        if (modifiedTime) {
+            const time = new Date(modifiedTime).getTime();
+            if (time > maxUpdatedAt) maxUpdatedAt = time;
+        }
+
+        if (maxUpdatedAt > 0) {
+            const d = new Date(maxUpdatedAt);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const dataLastModEl = document.getElementById('dataLastModified');
+            if (dataLastModEl) dataLastModEl.textContent = `데이터 최종 수정: ${year}-${month}-${day} ${hh}:${mm}`;
+        } else {
+            const dataLastModEl = document.getElementById('dataLastModified');
+            if (dataLastModEl) dataLastModEl.textContent = `데이터 최종 수정: 알 수 없음`;
         }
 
         if (modifiedTime) {
@@ -159,6 +211,7 @@ async function fetchData() {
                 TradeType: find(['tradetype', '수출입']) || '-',
                 WorkLocation: find(['worklocation', '작업지']) || '-',
                 Region: find(['region', '권역']) || '-',
+                DelayReason: find(['delayreason', '계약지연사유등특이사항', '계약 지연사유 등 특이사항', '계약지연사유', '특이사항', '지연사유']) || '-',
                 Complete: complete,
                 Lv3: lv3,
                 Lv2: lv2,
@@ -198,7 +251,8 @@ function updateDashboard() {
         let amt = a.CalculatedAmount || 0;
         let c = a.Complete || 0, l3 = a.Lv3 || 0, l2 = a.Lv2 || 0, l1 = a.Lv1 || 0;
         if (excludeMultiYear) {
-            const years = parseInt(String(a.MultiYearContract).replace(/[^0-9]/g, '')) || 1;
+            const m = String(a.MultiYearContract).match(/[0-9.]+/);
+            const years = m ? parseFloat(m[0]) : 1;
             if (years > 1) {
                 const f = 1 / years;
                 amt *= f; c *= f; l3 *= f; l2 *= f; l1 *= f;
@@ -218,7 +272,8 @@ function updateDashboard() {
     renderMonthlyChart(adjPlan, adjActual, startMonth, endMonth);
     renderMonthComparisonSection(adjPlan, adjActual, endMonth); // Comparison uses endMonth as current
     renderDrillDownSummary(mPlan, mActual);
-    renderProgressTable(dashboardData.progress);
+    filterAndRenderProgressTable();
+    renderWeeklyReport();
 }
 
 function renderKPIs(plan, actual, startMonth, endMonth, allActual, isExcluded) {
@@ -235,7 +290,8 @@ function renderKPIs(plan, actual, startMonth, endMonth, allActual, isExcluded) {
     } else {
         const multiYearPortion = actual.reduce((s, item) => {
             const total = item.CalculatedAmount || 0;
-            const years = parseInt(String(item.MultiYearContract).replace(/[^0-9]/g, '')) || 1;
+            const m = String(item.MultiYearContract).match(/[0-9.]+/);
+            const years = m ? parseFloat(m[0]) : 1;
             if (years > 1) {
                 const thisYear = total / years;
                 return s + (total - thisYear);
@@ -668,6 +724,45 @@ function renderDrillDownDetail(team, actual, person = null) {
     document.getElementById('drilldownDetailContainer').scrollIntoView({ behavior: 'smooth' });
 }
 
+function filterAndRenderProgressTable() {
+    const teamFilter = document.getElementById('teamFilter').value;
+    const personFilter = document.getElementById('personFilter').value;
+    
+    const clientSearch = (document.getElementById('progressClientSearch')?.value || '').toLowerCase().trim();
+    const personSearch = (document.getElementById('progressPersonSearch')?.value || '').toLowerCase().trim();
+
+    const filtered = dashboardData.progress.filter(it => {
+        const row = it.json ? it.json : it;
+        const find = (keys) => {
+            const clean = (s) => String(s || '').replace(/[^a-zA-Z0-9가-힣]/g, '').toLowerCase();
+            const targetKeys = keys.map(clean);
+            for (let k of Object.keys(row)) {
+                if (targetKeys.includes(clean(k))) return row[k];
+            }
+            return null;
+        };
+
+        const client = find(['customer_name', 'clientname', '화주', '업체']) || '-';
+        const team = find(['team_name', 'teamname', '팀명', '팀구분']) || '-';
+        const rep = find(['sales_rep', 'salesperson', '영업사원', '담당자']) || '미정';
+
+        // Apply global filters
+        if (teamFilter !== 'all' && teamFilter !== '전체 팀') {
+            if (teamFilter === 'TCS' && team.toUpperCase() !== 'TCS') return false;
+            if (teamFilter !== 'TCS' && !team.includes(teamFilter.replace('팀', ''))) return false;
+        }
+        if (personFilter !== 'all' && personFilter !== '전체 사원' && rep !== personFilter) return false;
+
+        // Apply local search filters
+        if (clientSearch && !client.toLowerCase().includes(clientSearch)) return false;
+        if (personSearch && !rep.toLowerCase().includes(personSearch)) return false;
+
+        return true;
+    });
+
+    renderProgressTable(filtered);
+}
+
 function renderProgressTable(data) {
     const tbody = document.getElementById('progressTableBody');
     tbody.innerHTML = '';
@@ -918,7 +1013,12 @@ function formatNumber(n, noD = false) {
     const val = n || 0;
     const absVal = Math.abs(val);
     const formatted = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: noD ? 0 : 1 }).format(absVal);
-    return val < 0 ? `△${formatted}` : formatted;
+    return val < 0 ? `-${formatted}` : formatted;
+}
+
+function f1(val) {
+    if (val === 0) return '-';
+    return Number(val).toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 function populateFilters() {
     const teams = [...new Set(dashboardData.actual.map(a => a.Teamname))].sort();
@@ -1004,6 +1104,78 @@ async function exportTableToExcel(id, name) {
     window.URL.revokeObjectURL(url);
 }
 
+async function exportWeeklyReportExcel(name) {
+    const workbook = new ExcelJS.Workbook();
+    
+    const tables = [
+        { id: 'reportTable', name: '주간업무보고' },
+        { id: 'preApprovalTable', name: '품의전 확정' },
+        { id: 'validationTable', name: '수주실적 검증' },
+        { id: 'multiYearTable', name: '다년계약 현황' }
+    ];
+
+    tables.forEach(t => {
+        const table = document.getElementById(t.id);
+        if (!table) return;
+        const worksheet = workbook.addWorksheet(t.name);
+        const rows = Array.from(table.rows);
+        const grid = [];
+        
+        rows.forEach((htmlRow, rowIndex) => {
+            if (htmlRow.classList.contains('filter-row')) return;
+            if (!grid[rowIndex]) grid[rowIndex] = [];
+            let colIndex = 0;
+            Array.from(htmlRow.cells).forEach((htmlCell) => {
+                while (grid[rowIndex][colIndex]) colIndex++;
+                const rs = htmlCell.rowSpan || 1;
+                const cs = htmlCell.colSpan || 1;
+                const excelRow = worksheet.getRow(rowIndex + 1);
+                const excelCell = excelRow.getCell(colIndex + 1);
+                
+                // input/contenteditable 인 경우 텍스트를 제대로 가져옴
+                let cellText = htmlCell.innerText.trim();
+                if (htmlCell.tagName === 'INPUT') cellText = htmlCell.value.trim();
+                excelCell.value = cellText;
+                
+                if (rs > 1 || cs > 1) {
+                    worksheet.mergeCells(rowIndex + 1, colIndex + 1, rowIndex + rs, colIndex + cs);
+                    for (let r = 0; r < rs; r++) {
+                        for (let c = 0; c < cs; c++) {
+                            if (!grid[rowIndex + r]) grid[rowIndex + r] = [];
+                            grid[rowIndex + r][colIndex + c] = true;
+                        }
+                    }
+                } else {
+                    grid[rowIndex][colIndex] = true;
+                }
+                
+                if (htmlRow.parentElement.tagName === 'THEAD' || htmlRow.classList.contains('sum-row') || (htmlCell.parentElement.parentElement && htmlCell.parentElement.parentElement.tagName === 'TFOOT')) {
+                    excelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF002D5B' } };
+                    excelCell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
+                } else {
+                    if (rowIndex % 2 === 0) excelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                }
+                excelCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                excelCell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE2E8F0' } }, left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } }, right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+                };
+                colIndex += cs;
+            });
+        });
+        worksheet.columns.forEach(col => { col.width = 18; });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
 async function exportElementToPDF(id, name, orientation = 'landscape') {
     const targetElement = document.getElementById(id);
     if (!targetElement) return;
@@ -1059,7 +1231,7 @@ async function exportElementToPDF(id, name, orientation = 'landscape') {
             word-break: normal !important;
         }
         /* 페이지 짤림 방지 */
-        .chart-card, .kpi-card, tr, thead, tbody, th, td {
+        .card, .chart-card, .kpi-card, tr, thead, tbody, th, td {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
@@ -1089,7 +1261,7 @@ async function exportElementToPDF(id, name, orientation = 'landscape') {
             scrollY: 0,
             scrollX: 0
         },
-        pagebreak: { mode: ['css', 'legacy'], before: ['.custom-page-break'], avoid: ['.chart-card', '.kpi-card', 'tr', 'thead', 'tbody'] }, // 정확한 페이지 분할 지정
+        pagebreak: { mode: ['css', 'legacy'], before: ['.custom-page-break'], avoid: ['.card', '.chart-card', '.kpi-card', 'tr', 'thead', 'tbody'] }, // 정확한 페이지 분할 지정
         jsPDF: { unit: 'mm', format: 'a3', orientation: orientation }
     };
 
@@ -1117,3 +1289,233 @@ async function exportElementToPDF(id, name, orientation = 'landscape') {
     }
 }
 
+function renderWeeklyReport() {
+    const selectedMonth = parseInt(document.getElementById('reportMonthFilter').value);
+    
+    document.getElementById('reportCurrentMonthHeader').textContent = `당월(${selectedMonth}월)`;
+    document.getElementById('reportCurrentMonthLv3Header').textContent = `당월누계(${selectedMonth}월) Lv3`;
+
+    const teams = ["1팀", "2팀", "3팀", "TCS", "합계"];
+    const fixedData = {
+        "1팀": { prev: 542, target: 451 },
+        "2팀": { prev: 137, target: 274 },
+        "3팀": { prev: 301, target: 276 },
+        "TCS": { prev: 0, target: 100 },
+        "합계": { prev: 980, target: 1100 }
+    };
+
+    const tbody = document.getElementById('reportTableBody');
+    tbody.innerHTML = '';
+
+    let sumCurrPlan = 0, sumCurrAct = 0, sumCumPlan = 0, sumCumAct = 0, sumCurrLv3 = 0;
+
+    teams.forEach(team => {
+        const isTotal = team === "합계";
+        const f = fixedData[team];
+
+        let currPlan = 0, currAct = 0, cumPlan = 0, cumAct = 0, currLv3 = 0;
+        let lv3Details = [];
+
+        if (!isTotal) {
+            dashboardData.plan.forEach(p => {
+                if (p.Teamname.includes(team)) {
+                    if (p.MonthInt === selectedMonth) currPlan += p.CalculatedAmount || 0;
+                    if (p.MonthInt <= selectedMonth) cumPlan += p.CalculatedAmount || 0;
+                }
+            });
+
+            dashboardData.actual.forEach(a => {
+                if (a.Teamname.includes(team)) {
+                    if (a.MonthInt === selectedMonth) {
+                        currAct += a.Complete || 0; 
+                    }
+                    if (a.MonthInt <= selectedMonth) {
+                        cumAct += a.Complete || 0; 
+                        currLv3 += a.Lv3 || 0;
+                        if ((a.Lv3 || 0) > 0) {
+                            lv3Details.push(`${a.ClientName}(${f1(a.Lv3)})`);
+                        }
+                    }
+                }
+            });
+
+            sumCurrPlan += currPlan;
+            sumCurrAct += currAct;
+            sumCumPlan += cumPlan;
+            sumCumAct += cumAct;
+            sumCurrLv3 += currLv3;
+        } else {
+            currPlan = sumCurrPlan;
+            currAct = sumCurrAct;
+            cumPlan = sumCumPlan;
+            cumAct = sumCumAct;
+            currLv3 = sumCurrLv3;
+        }
+
+        const tr = document.createElement('tr');
+        if (isTotal) {
+            tr.style.fontWeight = 'bold';
+            tr.style.backgroundColor = '#e2e8f0';
+        }
+
+        const formatDash = (val) => val === 0 ? '-' : formatNumber(val, true);
+
+        tr.innerHTML = `
+            <td>${team}</td>
+            <td>${f.prev}</td>
+            <td>${formatNumber(f.target)}</td>
+            <td>${formatDash(currPlan)}</td>
+            <td>${formatDash(currAct)}</td>
+            <td>${formatDash(cumPlan)}</td>
+            <td>${formatDash(cumAct)}</td>
+            <td>${isTotal ? f1(currLv3) : f1(currLv3)}</td>
+            <td style="text-align: left; font-size: 0.85rem; line-height: 1.4;">${isTotal ? '-' : lv3Details.join('<br>')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // 수주실적 검증 표
+    const valTbody = document.getElementById('validationTableBody');
+    valTbody.innerHTML = '';
+    
+    const regions = ["수도권", "중부권", "영남권", "총액"];
+    let valData = {
+        "수도권": { pre: 0, done: 0 },
+        "중부권": { pre: 0, done: 0 },
+        "영남권": { pre: 0, done: 0 },
+        "총액": { pre: 0, done: 0 }
+    };
+
+    let multiYearTotal = 0;
+
+    let preAppTotal = 0;
+    const preAppRows = [];
+    let preAppMultiTotal = 0;
+
+    dashboardData.actual.forEach(a => {
+        if (a.MonthInt <= selectedMonth) {
+            let r = (a.Region || '').trim();
+            if (r.includes('수도')) r = '수도권';
+            else if (r.includes('중부') || r.includes('호남') || r.includes('충청')) r = '중부권';
+            else if (r.includes('영남') || r.includes('경북') || r.includes('경남') || r.includes('부산')) r = '영남권';
+            else r = '수도권'; 
+            
+            if (valData[r]) {
+                const doneAmt = a.Complete || 0;
+                const preAmt = a.Lv3 || 0;
+                
+                valData[r].done += doneAmt;
+                valData["총액"].done += doneAmt;
+                valData[r].pre += preAmt;
+                valData["총액"].pre += preAmt;
+            }
+
+            const m = String(a.MultiYearContract).match(/[0-9.]+/);
+            const years = m ? parseFloat(m[0]) : 0;
+            if (years > 1) {
+                // 검증표 다년계약 계산 시 Complete + Lv3 기준
+                const conf = (a.Complete || 0) + (a.Lv3 || 0);
+                const oneYear = conf / years;
+                multiYearTotal += (conf - oneYear);
+            }
+
+            // 수주 품의전 확정 거래선 (Lv3가 존재하는 경우)
+            const lv3Amt = a.Lv3 || 0;
+            if (lv3Amt > 0) {
+                preAppTotal += lv3Amt;
+                let amtDisplay = f1(lv3Amt);
+                if (years > 1) {
+                    const preMulti = lv3Amt - (lv3Amt / years);
+                    preAppMultiTotal += preMulti;
+                    amtDisplay += `(${years}년)`;
+                }
+                preAppRows.push(`
+                    <tr>
+                        <td style="text-align: left;">${a.ClientName}</td>
+                        <td>${a.Teamname.replace('컨테이너영업', '').trim()}</td>
+                        <td contenteditable="true" style="cursor: text;">${selectedMonth}월</td>
+                        <td contenteditable="true" style="text-align: left; cursor: text;">${a.DelayReason || '-'}</td>
+                        <td>${amtDisplay}</td>
+                    </tr>
+                `);
+            }
+        }
+    });
+
+    const preAppTbody = document.getElementById('preApprovalTableBody');
+    if (preAppTbody) {
+        preAppTbody.innerHTML = preAppRows.join('');
+        document.getElementById('preApprovalTotal').textContent = f1(preAppTotal);
+        document.getElementById('preApprovalSum').textContent = f1(preAppTotal);
+        document.getElementById('preApprovalMultiTotal').textContent = f1(multiYearTotal);
+        const netTotal = valData["총액"].done + valData["총액"].pre - multiYearTotal;
+        document.getElementById('preApprovalNetTotal').textContent = f1(netTotal);
+    }
+
+    regions.forEach(r => {
+        const d = valData[r];
+        const tot = d.pre + d.done;
+        const tr = document.createElement('tr');
+        if (r === "총액") tr.style.fontWeight = 'bold';
+        tr.innerHTML = `
+            <td>${r}</td>
+            <td>${f1(d.pre)}</td>
+            <td>${f1(d.done)}</td>
+            <td style="color: ${r === '총액' ? '#ef4444' : 'inherit'};">${f1(tot)}</td>
+        `;
+        valTbody.appendChild(tr);
+    });
+
+    const valExcl = valData["총액"].pre + valData["총액"].done - multiYearTotal;
+    document.getElementById('validationExcludingMultiYear').textContent = f1(valExcl);
+
+    // 다년계약 현황 표
+    const multiTbody = document.getElementById('multiYearTableBody');
+    multiTbody.innerHTML = '';
+
+    let sum1Y = 0, sumMultiY = 0;
+    const multiRows = [];
+
+    dashboardData.actual.forEach(a => {
+        if (a.MonthInt <= selectedMonth) {
+            const m = String(a.MultiYearContract).match(/[0-9.]+/);
+            const years = m ? parseFloat(m[0]) : 0;
+            if (years > 1) {
+                const conf = (a.Complete || 0) + (a.Lv3 || 0);
+                const oneY = conf / years;
+                const multiY = conf - oneY;
+                
+                sum1Y += oneY;
+                sumMultiY += multiY;
+
+                multiRows.push(`
+                    <tr>
+                        <td style="text-align: left;">${a.ClientName}</td>
+                        <td>${years}</td>
+                        <td>${f1(conf)}</td>
+                        <td>${f1(oneY)}</td>
+                        <td style="color: #ef4444;">${f1(multiY)}</td>
+                        <td>${a.Status}</td>
+                    </tr>
+                `);
+            }
+        }
+    });
+
+    multiRows.forEach(rowHTML => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = rowHTML;
+        multiTbody.appendChild(tr);
+    });
+
+    const sumTr = document.createElement('tr');
+    sumTr.style.fontWeight = 'bold';
+    sumTr.style.backgroundColor = '#f1f5f9';
+    sumTr.innerHTML = `
+        <td colspan="3" style="text-align: right; padding-right: 20px;">총 합계</td>
+        <td>${f1(sum1Y)}</td>
+        <td style="color: #ef4444;">${f1(sumMultiY)}</td>
+        <td></td>
+    `;
+    multiTbody.appendChild(sumTr);
+}
