@@ -7,11 +7,72 @@ let charts = { monthly: null, teamPlan: null, personActual: null };
 let currentDrilldownTeam = '';
 let currentDrilldownPerson = '';
 
+const USERS = {
+    '19958056': { name: '김중관', pw: 'zjsxpdlsj', role: 'admin' },
+    '20190212': { name: '김원상', pw: 'rlghlrxla', role: 'admin' },
+    '20170709': { name: '김진우', pw: 'rlghlrxla', role: 'admin' },
+    '20200214': { name: '김광범', pw: 'rlghlrxla', role: 'admin' },
+    '20240176': { name: '최윤서', pw: 'rlghlrxla', role: 'admin' },
+    '20190157': { name: '최현정', pw: 'duddjq1xla', role: 'admin' },
+    '19900028': { name: '정재훈', pw: 'duddjq2xla', role: 'admin' },
+    '20090240': { name: '성창훈', pw: 'duddjq3xla', role: 'admin' },
+    '20190362': { name: '김성진', pw: 'duddjq1xla', role: 'team', team: '컨테이너영업1팀' },
+    '20220676': { name: '최원기', pw: 'duddjq1xla', role: 'team', team: '컨테이너영업1팀' },
+    '20170585': { name: '서종민', pw: 'duddjq1xla', role: 'team', team: '컨테이너영업1팀' },
+    '20230123': { name: '김상혁', pw: 'duddjq1xla', role: 'team', team: '컨테이너영업1팀' },
+    '20230331': { name: '임동규', pw: 'duddjq1xla', role: 'team', team: '컨테이너영업1팀' },
+    '20250582': { name: '방정업', pw: 'duddjq2xla', role: 'team', team: '컨테이너영업2팀' },
+    '20250116': { name: '유경호', pw: 'duddjq2xla', role: 'team', team: '컨테이너영업2팀' },
+    '20240121': { name: '서현식', pw: 'duddjq2xla', role: 'team', team: '컨테이너영업2팀' },
+    '20200179': { name: '이동신', pw: 'duddjq3xla', role: 'team', team: '컨테이너영업3팀' },
+    '20220734': { name: '오영훈', pw: 'duddjq3xla', role: 'team', team: '컨테이너영업3팀' },
+    '20250132': { name: '박한샘', pw: 'duddjq3xla', role: 'team', team: '컨테이너영업3팀' },
+    '20260601': { name: 'TCS', pw: 'tcs', role: 'team', team: 'TCS' },
+};
+let currentUser = null;
+
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
-    fetchData();
+    initLogin();
 });
+
+function initLogin() {
+    const stored = sessionStorage.getItem('currentUser');
+    if (stored) {
+        currentUser = JSON.parse(stored);
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'flex';
+        document.getElementById('loggedInUserName').textContent = `${currentUser.name} (${currentUser.role === 'admin' ? '전체권한' : currentUser.team})`;
+        fetchData();
+    } else {
+        document.getElementById('loginBtn').onclick = attemptLogin;
+        document.getElementById('loginPw').onkeypress = (e) => { if (e.key === 'Enter') attemptLogin(); };
+        document.getElementById('loginId').onkeypress = (e) => { if (e.key === 'Enter') document.getElementById('loginPw').focus(); };
+    }
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        sessionStorage.removeItem('currentUser');
+        location.reload();
+    });
+}
+
+function attemptLogin() {
+    const id = document.getElementById('loginId').value.trim();
+    const pw = document.getElementById('loginPw').value;
+    const user = USERS[id];
+    
+    if (user && user.pw === pw) {
+        currentUser = { id, name: user.name, role: user.role, team: user.team };
+        sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        document.getElementById('loginError').style.display = 'none';
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'flex';
+        document.getElementById('loggedInUserName').textContent = `${user.name} (${user.role === 'admin' ? '전체권한' : user.team})`;
+        fetchData();
+    } else {
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
 
 function setupEventListeners() {
     // Nav & Filters
@@ -202,7 +263,7 @@ async function fetchData() {
                 ...data,
                 MonthInt: monthInt,
                 SalesMonth: monthInt ? `${monthInt}월` : '-',
-                Teamname: (find(['teamname', 'team_name', '팀명', '소속']) || '미지정').trim(),
+                Teamname: (find(['teamname', 'team_name', '팀명', '소속', '팀구분']) || '미지정').trim(),
                 SalesPerson: find(['salesperson', '영업사원', '담당자', 'sales_rep']) || '미정',
                 ClientName: find(['clientname', 'customer_name', '화주', '청구처', '업체']) || '-',
                 Status: find(['status', '품의진행상태', '진행상태']) || '-',
@@ -220,9 +281,30 @@ async function fetchData() {
             };
         };
 
-        dashboardData.plan = plan.map(r => mapRow(r, false));
-        dashboardData.actual = actual.map(r => mapRow(r, true));
-        dashboardData.progress = progress.map(r => mapRow(r, false));
+        let rawPlan = plan.map(r => mapRow(r, false));
+        let rawActual = actual.map(r => mapRow(r, true));
+        let rawProgress = progress.map(r => mapRow(r, false));
+
+        if (currentUser && currentUser.role !== 'admin') {
+            const team = currentUser.team;
+            const matchTeam = (rowTeam, userTeam) => {
+                if (!rowTeam || rowTeam === '미지정') return false;
+                const r = rowTeam.replace(/[^a-zA-Z0-9가-힣]/g, '').toUpperCase();
+                const u = userTeam.replace(/[^a-zA-Z0-9가-힣]/g, '').toUpperCase();
+                if (r.includes('1팀') && u.includes('1팀')) return true;
+                if (r.includes('2팀') && u.includes('2팀')) return true;
+                if (r.includes('3팀') && u.includes('3팀')) return true;
+                if (r.includes('TCS') && u.includes('TCS')) return true;
+                return r.includes(u) || u.includes(r);
+            };
+            rawPlan = rawPlan.filter(r => matchTeam(r.Teamname, team));
+            rawActual = rawActual.filter(r => matchTeam(r.Teamname, team));
+            rawProgress = rawProgress.filter(r => matchTeam(r.Teamname, team));
+        }
+
+        dashboardData.plan = rawPlan;
+        dashboardData.actual = rawActual;
+        dashboardData.progress = rawProgress;
 
         populateFilters();
         updateDashboard();
@@ -331,7 +413,7 @@ function renderMatrixTable(plan, actual, startMonth, endMonth) {
     const cats = [
         { id: 'plan', label: '계획' },
         { id: 'actual', label: '실적' },
-        { id: 'gap', label: '차질' }
+        { id: 'gap', label: 'GAP' }
     ];
 
     cats.forEach(cat => {
@@ -435,8 +517,12 @@ function renderMonthComparisonSection(plan, actual, globalStartMonth, globalEndM
     const singleSel = document.getElementById('sectionSingleMonthSelector');
 
     if (teamSel.options.length === 0) {
-        teamSel.add(new Option('컨테이너 전체', 'all'));
-        ['컨테이너영업1팀', '컨테이너영업2팀', '컨테이너영업3팀', 'TCS'].forEach(t => teamSel.add(new Option(t, t)));
+        if (!currentUser || currentUser.role === 'admin') {
+            teamSel.add(new Option('컨테이너 전체', 'all'));
+            ['컨테이너영업1팀', '컨테이너영업2팀', '컨테이너영업3팀', 'TCS'].forEach(t => teamSel.add(new Option(t, t)));
+        } else {
+            teamSel.add(new Option(currentUser.team, currentUser.team));
+        }
         
         cumSel.add(new Option('선택', 'none'));
         for(let i=1; i<=12; i++) cumSel.add(new Option(`${i}월 누계`, i));
@@ -625,7 +711,7 @@ function renderDrillDownSummary(plan, actual, startMonth, endMonth) {
                     ptr.className = `person-row person-row-${team.replace(/ /g, '')}`;
                     ptr.style.backgroundColor = '#fcfcfc';
                     ptr.innerHTML = `
-                        <td style="text-align:left; padding-left: 3rem; color:#64748b; font-size:0.85rem;">└ ${person}</td>
+                        <td style="text-align:left; padding-left: 3rem; color:#64748b; font-size:0.85rem;">└ ${person} <span style="font-size:0.75rem; color:#3b82f6; cursor:pointer; margin-left:8px; text-decoration:underline;">☞ 상세보기</span></td>
                         <td style="text-align:center; font-size:0.85rem;">${formatNumber(pp, true)}억</td>
                         <td style="text-align:center; font-size:0.85rem; color:#3b82f6;">${formatNumber(pa, true)}억</td>
                         <td style="text-align:center; font-size:0.85rem; color:${(pa - pp) < 0 ? 'red' : 'inherit'}">${formatNumber(pa - pp, true)}억</td>
@@ -647,7 +733,7 @@ function renderDrillDownSummary(plan, actual, startMonth, endMonth) {
     trTotal.style.backgroundColor = '#f1f5f9';
     trTotal.style.borderTop = '2px solid #cbd5e1';
     trTotal.innerHTML = `
-        <td style="text-align:center; padding: 12px; font-weight: 800; color: #1e293b;">총 합계</td>
+        <td style="text-align:center; padding: 12px; font-weight: 800; color: #1e293b;">총 합계 <span style="font-size:0.75rem; color:#3b82f6; cursor:pointer; margin-left:8px; text-decoration:underline; font-weight:bold;">☞ 상세보기</span></td>
         <td style="text-align:center; color: #1e293b; font-weight: 800;">${formatNumber(tP, true)}억</td>
         <td style="text-align:center; color: var(--primary-color); font-weight: 800;">${formatNumber(tA, true)}억</td>
         <td style="text-align:center; color: ${(tA - tP) < 0 ? 'red' : '#1e293b'}; font-weight: 800;">${formatNumber(tA - tP, true)}억</td>
@@ -847,8 +933,17 @@ function filterAndRenderProgressTable() {
 
         // Apply global filters
         if (teamFilter !== 'all' && teamFilter !== '전체 팀') {
-            if (teamFilter === 'TCS' && team.toUpperCase() !== 'TCS') return false;
-            if (teamFilter !== 'TCS' && !team.includes(teamFilter.replace('팀', ''))) return false;
+            const matchTeamStrict = (rowTeam, filterTeam) => {
+                if (!rowTeam || rowTeam === '미지정' || rowTeam === '-') return false;
+                const r = String(rowTeam).replace(/[^a-zA-Z0-9가-힣]/g, '').toUpperCase();
+                const f = String(filterTeam).replace(/[^a-zA-Z0-9가-힣]/g, '').toUpperCase();
+                if (r.includes('1팀') && f.includes('1팀')) return true;
+                if (r.includes('2팀') && f.includes('2팀')) return true;
+                if (r.includes('3팀') && f.includes('3팀')) return true;
+                if (r.includes('TCS') && f.includes('TCS')) return true;
+                return r.includes(f) || f.includes(r);
+            };
+            if (!matchTeamStrict(team, teamFilter)) return false;
         }
         if (personFilter !== 'all' && personFilter !== '전체 사원' && rep !== personFilter) return false;
 
@@ -1123,7 +1218,8 @@ function populateFilters() {
     const teams = [...new Set(dashboardData.actual.map(a => a.Teamname))].sort();
     const persons = [...new Set(dashboardData.actual.map(a => a.SalesPerson))].sort();
     const tF = document.getElementById('teamFilter'), pF = document.getElementById('personFilter');
-    tF.innerHTML = '<option value="all">전체 팀</option>'; pF.innerHTML = '<option value="all">전체 사원</option>';
+    tF.innerHTML = (!currentUser || currentUser.role === 'admin') ? '<option value="all">전체 팀</option>' : ''; 
+    pF.innerHTML = '<option value="all">전체 사원</option>';
     teams.forEach(t => tF.add(new Option(t, t))); persons.forEach(p => pF.add(new Option(p, p)));
 }
 async function exportTableToExcel(id, name) {
